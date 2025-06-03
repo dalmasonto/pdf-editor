@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -31,6 +32,7 @@ export default function AnnotatePdfPage() {
       setCurrentPage(1);
       setScale(1.0);
       setSelectedTool(null);
+      setSelectedAnnotationId(null);
       toast({ title: "PDF Loaded", description: `${file.name} has been loaded.` });
     } else {
       toast({ title: "Invalid File", description: "Please upload a valid PDF file.", variant: "destructive" });
@@ -39,8 +41,10 @@ export default function AnnotatePdfPage() {
 
   const addAnnotation = useCallback((newAnnotationData: Omit<Annotation, 'id'>) => {
     const id = Date.now().toString() + Math.random().toString(36).substring(2,9);
-    setAnnotations((prev) => [...prev, { ...newAnnotationData, id }]);
+    const newAnnotation = { ...newAnnotationData, id };
+    setAnnotations((prev) => [...prev, newAnnotation]);
     setSelectedTool(null); // Deselect tool after adding
+    setSelectedAnnotationId(id); // Select the new annotation
   }, []);
 
   const updateAnnotation = useCallback((updatedAnnotation: Annotation) => {
@@ -88,12 +92,12 @@ export default function AnnotatePdfPage() {
           
           page.drawText(anno.text, {
             x: annoX,
-            y: annoY, // Use adjusted Y
-            size: anno.fontSize, // This might need adjustment if fontSize is in px
-            font: helveticaFont, // Allow font selection in future
+            y: annoY + annoHeight - anno.fontSize, // Adjust y for text baseline
+            size: anno.fontSize,
+            font: helveticaFont,
             color: rgb(r, g, b),
             lineHeight: anno.fontSize * 1.2,
-            maxWidth: annoWidth, // Basic text wrapping
+            maxWidth: annoWidth,
             rotate: degrees(anno.rotation || 0),
           });
         } else if (anno.type === 'image') {
@@ -103,7 +107,6 @@ export default function AnnotatePdfPage() {
               const base64Data = anno.src.split(',')[1];
               imageBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0)).buffer;
             } else {
-              // For URL sources, fetch the image (CORS dependent)
               const response = await fetch(anno.src);
               imageBytes = await response.arrayBuffer();
             }
@@ -120,7 +123,7 @@ export default function AnnotatePdfPage() {
             
             page.drawImage(pdfImage, {
               x: annoX,
-              y: annoY, // Use adjusted Y
+              y: annoY,
               width: annoWidth,
               height: annoHeight,
               rotate: degrees(anno.rotation || 0),
@@ -232,6 +235,8 @@ export default function AnnotatePdfPage() {
             setNumPages={setNumPages}
             scale={scale}
             setScale={setScale}
+            selectedAnnotationId={selectedAnnotationId}
+            onAnnotationSelect={setSelectedAnnotationId}
           />
         </main>
         <AnnotationSidebar
@@ -245,3 +250,5 @@ export default function AnnotatePdfPage() {
     </div>
   );
 }
+
+    

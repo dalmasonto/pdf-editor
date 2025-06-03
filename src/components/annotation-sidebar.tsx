@@ -147,7 +147,7 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
   return (
     <div className="w-96 bg-card border-l p-4 h-full flex flex-col">
       <h2 className="text-xl font-headline mb-4 text-center">Annotations</h2>
-      <Tabs defaultValue="text" className="flex-grow flex flex-col">
+      <Tabs defaultValue="text" className="flex-grow flex flex-col min-h-0">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="text">Text ({textAnnotations.length})</TabsTrigger>
           <TabsTrigger value="image">Images ({imageAnnotations.length})</TabsTrigger>
@@ -184,5 +184,3 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
 };
 
 export default AnnotationSidebar;
-
-    

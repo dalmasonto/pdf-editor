@@ -1,10 +1,10 @@
+
 export interface BaseAnnotation {
   id: string;
   page: number;
   x: number; // percentage
   y: number; // percentage
-  width: number; // percentage
-  height: number; // percentage
+  // width & height are type-specific
   rotation: number; // degrees
 }
 
@@ -14,12 +14,16 @@ export interface TextAnnotation extends BaseAnnotation {
   fontSize: number; // in pixels relative to a default PDF page size, or PDF points
   fontFamily: string;
   color: string;
+  width: number; // percentage
+  height: number; // percentage
 }
 
 export interface ImageAnnotation extends BaseAnnotation {
   type: 'image';
   src: string; // data URL
   alt: string;
+  width: string; // e.g., "100px", "25%", "5em"
+  height: string; // e.g., "80px", "15%", "3em"
 }
 
 export type Annotation = TextAnnotation | ImageAnnotation;

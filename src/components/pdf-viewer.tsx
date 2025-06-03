@@ -94,8 +94,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
-        onPageChange(1);
-        setPageDimensions({ width: 0, height: 0 });
+        onPageChange(1); // Reset to first page
       } catch (error) {
         console.error("Error loading PDF document:", error);
         setPdfLoadingError(`Error loading PDF: ${error instanceof Error ? error.message : String(error)}`);
@@ -108,17 +107,16 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       setPdfLoadingError("Error reading file. Please ensure it's a valid PDF.");
     };
     reader.readAsArrayBuffer(file);
-  }, [file, isPdfjsLibLoaded, setNumPages, onPageChange, pdfLoadingError]);
+  }, [file, isPdfjsLibLoaded, setNumPages, onPageChange]);
 
 
   const renderPage = useCallback(async () => {
-    if (!pdfDoc || !canvasRef.current) return;
-
-    if (currentPage > pdfDoc.numPages || currentPage < 1) {
-        console.warn(`Attempted to render invalid page number: ${currentPage} (numPages: ${pdfDoc.numPages})`);
-        setPdfLoadingError(`Cannot render page ${currentPage}: page number is out of range (1-${pdfDoc.numPages}).`);
-        setPageDimensions({ width: 0, height: 0 });
-        return;
+    if (!pdfDoc || !canvasRef.current || currentPage <= 0 || currentPage > pdfDoc.numPages) {
+      if (pdfDoc && (currentPage <= 0 || currentPage > pdfDoc.numPages)) {
+          setPdfLoadingError(`Cannot render page ${currentPage}: page number is out of range (1-${pdfDoc.numPages}).`);
+      }
+      setPageDimensions({ width: 0, height: 0 }); // Ensure this is reset if conditions fail
+      return;
     }
 
     try {
@@ -143,9 +141,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       };
       await page.render(renderContext).promise;
       setPageDimensions({ width: viewport.width, height: viewport.height });
-      setPdfLoadingError(null);
+      setPdfLoadingError(null); // Clear previous errors on successful render
     } catch (error) {
-      console.error("Error rendering PDF page:", error);
+      console.error(`Error rendering PDF page ${currentPage}:`, error);
       setPdfLoadingError(`Error rendering page ${currentPage}: ${error instanceof Error ? error.message : String(error)}`);
       setPageDimensions({ width: 0, height: 0 });
     }
@@ -154,8 +152,15 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   useEffect(() => {
     if (pdfDoc && currentPage > 0 && isPdfjsLibLoaded) {
       renderPage();
+    } else {
+        // If pdfDoc is null or currentPage is invalid, reflect that in pageDimensions
+        if (!pdfDoc && file && isPdfjsLibLoaded) {
+            // Waiting for pdfDoc to load
+        } else {
+            setPageDimensions({ width: 0, height: 0 });
+        }
     }
-  }, [pdfDoc, currentPage, scale, isPdfjsLibLoaded, renderPage]);
+  }, [pdfDoc, currentPage, scale, isPdfjsLibLoaded, renderPage, file]);
 
   const handleAnnotationMouseDown = useCallback((event: React.MouseEvent, annotation: Annotation) => {
     event.preventDefault();
@@ -190,8 +195,9 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     let newX = (mouseXOnCanvas / canvasRect.width) * 100 - dragStartOffset.x;
     let newY = (mouseYOnCanvas / canvasRect.height) * 100 - dragStartOffset.y;
 
-    newX = Math.max(0, Math.min(newX, 100 - currentAnnotation.width));
-    newY = Math.max(0, Math.min(newY, 100 - currentAnnotation.height));
+    // Clamp x and y to be within [0, 99.9] to keep top-left corner mostly on page
+    newX = Math.max(0, Math.min(newX, 99.9));
+    newY = Math.max(0, Math.min(newY, 99.9));
 
     onAnnotationUpdate({
         ...currentAnnotation,
@@ -223,6 +229,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     if (draggingAnnotationId) return;
 
     const target = event.target as HTMLElement;
+    // Deselect annotation if clicking on viewer background and not on a tool
     if ((target === viewerRef.current || target === canvasRef.current) && !selectedTool) {
         onAnnotationSelect(null);
     }
@@ -235,19 +242,20 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     const xRelativeToCanvas = event.clientX - canvasRect.left;
     const yRelativeToCanvas = event.clientY - canvasRect.top;
 
-    const x = (xRelativeToCanvas / canvasRect.width) * 100;
-    const y = (yRelativeToCanvas / canvasRect.height) * 100;
+    // Click coordinates as percentage of canvas
+    const xPercent = (xRelativeToCanvas / canvasRect.width) * 100;
+    const yPercent = (yRelativeToCanvas / canvasRect.height) * 100;
 
-    if (x < 0 || x > 100 || y < 0 || y > 100) return;
+    if (xPercent < 0 || xPercent > 100 || yPercent < 0 || yPercent > 100) return; // Click outside canvas bounds
 
     if (selectedTool === 'text') {
       const newAnnotation: Omit<TextAnnotation, 'id'> = {
         type: 'text',
         page: currentPage,
-        x: Math.max(0, Math.min(x, 100 - 20)), // clamp initial position
-        y: Math.max(0, Math.min(y, 100 - 5)),
-        width: 20,
-        height: 5,
+        x: Math.max(0, Math.min(xPercent, 99.9)), // Clamp initial position
+        y: Math.max(0, Math.min(yPercent, 99.9)),
+        width: 20, // Default percentage width
+        height: 5, // Default percentage height
         text: 'New Text',
         fontSize: 12,
         fontFamily: 'PT Sans',
@@ -267,10 +275,10 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             const newAnnotation: Omit<ImageAnnotation, 'id'> = {
               type: 'image',
               page: currentPage,
-              x: Math.max(0, Math.min(x, 100 - 25)), // clamp initial position
-              y: Math.max(0, Math.min(y, 100 - 15)),
-              width: 25,
-              height: 15,
+              x: Math.max(0, Math.min(xPercent, 99.9)), // Clamp initial position
+              y: Math.max(0, Math.min(yPercent, 99.9)),
+              width: "25%", // Default string width
+              height: "15%", // Default string height
               src: loadEvent.target?.result as string,
               alt: 'User image',
               rotation: 0,
@@ -297,41 +305,47 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           {!pdfDoc && (
             <p className="text-muted-foreground">Loading PDF document...</p>
           )}
+          {/* Render canvas container once pdfDoc is available, even if pageDimensions are not set yet */}
           {pdfDoc && (
             <div className="relative flex flex-col items-center justify-center">
               <div
                 className="relative shadow-lg"
                 style={
-                  pageDimensions.width > 0
+                  // Use pageDimensions to set size, but ensure it's always in DOM if pdfDoc exists
+                  pageDimensions.width > 0 && pageDimensions.height > 0
                     ? { width: pageDimensions.width, height: pageDimensions.height }
-                    : { display: 'none' } 
+                    : { width: 1, height: 1, visibility: 'hidden' } // Keep in DOM but hidden if not rendered
                 }
               >
                 <canvas ref={canvasRef} />
                 {pageDimensions.width > 0 && annotationsOnCurrentPage.map((anno) => {
                     const isSelected = selectedAnnotationId === anno.id || draggingAnnotationId === anno.id;
-                    const style: React.CSSProperties = {
+                    const baseStyle: React.CSSProperties = {
                       position: 'absolute',
                       left: `${anno.x}%`,
                       top: `${anno.y}%`,
-                      width: `${anno.width}%`,
-                      height: `${anno.height}%`,
                       transform: `rotate(${anno.rotation || 0}deg)`,
-                      transformOrigin: 'top left',
-                      border: isSelected ? '2px solid hsl(var(--primary))' : '1px dashed hsl(var(--primary))',
+                      transformOrigin: 'top left', // Rotation origin
+                      border: isSelected ? '2px solid hsl(var(--primary))' : '1px dashed hsl(var(--border))',
                       cursor: 'move',
                       userSelect: 'none',
                       boxSizing: 'border-box',
                     };
+
                     if (anno.type === 'text') {
+                      const textStyle: React.CSSProperties = {
+                        ...baseStyle,
+                        width: `${anno.width}%`,
+                        height: `${anno.height}%`,
+                      };
                       return (
-                        <div key={anno.id} style={style} data-ai-hint="text annotation"
+                        <div key={anno.id} style={textStyle} data-ai-hint="text annotation"
                              onMouseDown={(e) => handleAnnotationMouseDown(e, anno)}>
                           <textarea
                             value={anno.text}
                             onChange={(e) => onAnnotationUpdate({ ...anno, text: e.target.value })}
-                            onMouseDown={(e) => e.stopPropagation()} // Prevent drag if click starts on textarea
-                            onClick={(e) => e.stopPropagation()} // Prevent viewer click
+                            onMouseDown={(e) => e.stopPropagation()} 
+                            onClick={(e) => e.stopPropagation()} 
                             style={{
                               width: '100%',
                               height: '100%',
@@ -344,19 +358,24 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                               overflow: 'hidden',
                               padding: '2px',
                               boxSizing: 'border-box',
-                              cursor: 'text', // Text cursor for textarea
+                              cursor: 'text',
                             }}
                           />
                         </div>
                       );
                     } else if (anno.type === 'image') {
+                       const imageStyle: React.CSSProperties = {
+                        ...baseStyle,
+                        width: anno.width, // Uses string value directly e.g. "100px" or "25%"
+                        height: anno.height, // Uses string value directly
+                      };
                       return (
-                        <div key={anno.id} style={style} data-ai-hint="image content"
+                        <div key={anno.id} style={imageStyle} data-ai-hint="image content"
                              onMouseDown={(e) => handleAnnotationMouseDown(e, anno)}>
                           <img 
                             src={anno.src} 
                             alt={anno.alt} 
-                            style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }} // pointerEvents none for img so div mousedown works
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }}
                             onClick={(e) => e.stopPropagation()} />
                         </div>
                       );
@@ -376,5 +395,3 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 };
 
 export default PdfViewer;
-
-    

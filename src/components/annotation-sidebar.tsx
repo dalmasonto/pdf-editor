@@ -1,3 +1,4 @@
+
 "use client";
 
 import type React from 'react';
@@ -75,6 +76,28 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
             />
           </div>
         </div>
+         <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor={`textWidth-${anno.id}`}>Width (%)</Label>
+            <Input
+              id={`textWidth-${anno.id}`}
+              type="number"
+              value={anno.width}
+              onChange={(e) => onAnnotationUpdate({ ...anno, width: parseFloat(e.target.value) || 20 })}
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label htmlFor={`textHeight-${anno.id}`}>Height (%)</Label>
+            <Input
+              id={`textHeight-${anno.id}`}
+              type="number"
+              value={anno.height}
+              onChange={(e) => onAnnotationUpdate({ ...anno, height: parseFloat(e.target.value) || 5 })}
+              className="mt-1"
+            />
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
@@ -101,26 +124,30 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
             className="mt-1"
           />
         </div>
-        <div>
-            <Label htmlFor={`imgWidth-${anno.id}`}>Width (%)</Label>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <Label htmlFor={`imgWidth-${anno.id}`}>Width</Label>
             <Input
               id={`imgWidth-${anno.id}`}
-              type="number"
+              type="text" // Changed from number to text
               value={anno.width}
-              onChange={(e) => onAnnotationUpdate({ ...anno, width: parseFloat(e.target.value) || 25 })}
+              placeholder="e.g. 25% or 100px"
+              onChange={(e) => onAnnotationUpdate({ ...anno, width: e.target.value || "25%" })} // Default if cleared
               className="mt-1"
             />
           </div>
           <div>
-            <Label htmlFor={`imgHeight-${anno.id}`}>Height (%)</Label>
+            <Label htmlFor={`imgHeight-${anno.id}`}>Height</Label>
             <Input
               id={`imgHeight-${anno.id}`}
-              type="number"
+              type="text" // Changed from number to text
               value={anno.height}
-              onChange={(e) => onAnnotationUpdate({ ...anno, height: parseFloat(e.target.value) || 15 })}
+              placeholder="e.g. 15% or 80px"
+              onChange={(e) => onAnnotationUpdate({ ...anno, height: e.target.value || "15%" })} // Default if cleared
               className="mt-1"
             />
           </div>
+        </div>
       </CardContent>
     </Card>
   );

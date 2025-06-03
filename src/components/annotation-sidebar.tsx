@@ -148,9 +148,10 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
     <div className="w-96 bg-card border-l p-4 h-full flex flex-col">
       <h2 className="text-xl font-headline mb-4 text-center">Annotations</h2>
       <Tabs defaultValue="text" className="flex-grow flex flex-col">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="text">Text ({textAnnotations.length})</TabsTrigger>
           <TabsTrigger value="image">Images ({imageAnnotations.length})</TabsTrigger>
+          <TabsTrigger value="json">JSON</TabsTrigger>
         </TabsList>
         <ScrollArea className="flex-grow mt-4 pr-2">
           <TabsContent value="text">
@@ -167,6 +168,15 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
               <p className="text-muted-foreground text-sm text-center py-4">No image annotations yet.</p>
             )}
           </TabsContent>
+          <TabsContent value="json">
+            {annotations.length > 0 ? (
+              <pre className="text-xs whitespace-pre-wrap break-all p-2 border rounded bg-muted/20">
+                {JSON.stringify(annotations, null, 4)}
+              </pre>
+            ) : (
+              <p className="text-muted-foreground text-sm text-center py-4">No annotations to display.</p>
+            )}
+          </TabsContent>
         </ScrollArea>
       </Tabs>
     </div>
@@ -174,3 +184,5 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
 };
 
 export default AnnotationSidebar;
+
+    

@@ -76,7 +76,7 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
             />
           </div>
         </div>
-         <div className="grid grid-cols-2 gap-2">
+         <div className="grid grid-cols-1 gap-2"> {/* Changed to 1 column for width */}
           <div>
             <Label htmlFor={`textWidth-${anno.id}`}>Width (%)</Label>
             <Input
@@ -87,16 +87,7 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
               className="mt-1"
             />
           </div>
-          <div>
-            <Label htmlFor={`textHeight-${anno.id}`}>Height (%)</Label>
-            <Input
-              id={`textHeight-${anno.id}`}
-              type="number"
-              value={anno.height}
-              onChange={(e) => onAnnotationUpdate({ ...anno, height: parseFloat(e.target.value) || 5 })}
-              className="mt-1"
-            />
-          </div>
+          {/* Height input removed for text annotations */}
         </div>
       </CardContent>
     </Card>
@@ -129,10 +120,10 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
             <Label htmlFor={`imgWidth-${anno.id}`}>Width</Label>
             <Input
               id={`imgWidth-${anno.id}`}
-              type="text" // Changed from number to text
+              type="text" 
               value={anno.width}
               placeholder="e.g. 25% or 100px"
-              onChange={(e) => onAnnotationUpdate({ ...anno, width: e.target.value || "25%" })} // Default if cleared
+              onChange={(e) => onAnnotationUpdate({ ...anno, width: e.target.value || "25%" })} 
               className="mt-1"
             />
           </div>
@@ -140,10 +131,10 @@ const AnnotationSidebar: React.FC<AnnotationSidebarProps> = ({
             <Label htmlFor={`imgHeight-${anno.id}`}>Height</Label>
             <Input
               id={`imgHeight-${anno.id}`}
-              type="text" // Changed from number to text
+              type="text" 
               value={anno.height}
               placeholder="e.g. 15% or 80px"
-              onChange={(e) => onAnnotationUpdate({ ...anno, height: e.target.value || "15%" })} // Default if cleared
+              onChange={(e) => onAnnotationUpdate({ ...anno, height: e.target.value || "15%" })} 
               className="mt-1"
             />
           </div>

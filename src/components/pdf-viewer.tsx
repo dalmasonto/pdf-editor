@@ -3,8 +3,6 @@
 import type React from 'react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { Annotation, TextAnnotation, ImageAnnotation } from '@/types';
-import { ResizableBox } from 'react-resizable'; // Hypothetical, would need to install or implement
-import 'react-resizable/css/styles.css'; // If using react-resizable
 
 interface PdfViewerProps {
   file: File | null;
@@ -151,15 +149,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     }
   };
   
-  const handleAnnotationDragStop = (annotation: Annotation, newX: number, newY: number) => {
-    onAnnotationUpdate({ ...annotation, x: newX, y: newY });
-  };
-
-  const handleAnnotationResizeStop = (annotation: Annotation, newWidth: number, newHeight: number) => {
-     onAnnotationUpdate({ ...annotation, width: newWidth, height: newHeight });
-  };
-
-
   return (
     <div className="relative w-full h-full overflow-auto bg-muted/50 flex justify-center items-center p-4" ref={viewerRef} onClick={handleViewerClick}>
       {file && pageDimensions.width > 0 && (
@@ -177,7 +166,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                 top: `${anno.y}%`,
                 width: `${anno.width}%`,
                 height: `${anno.height}%`,
-                transform: `rotate(${anno.rotation}deg)`,
+                transform: `rotate(${anno.rotation || 0}deg)`,
                 transformOrigin: 'top left',
                 border: '1px dashed hsl(var(--primary))', // Highlight annotations
                 cursor: 'move',

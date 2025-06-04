@@ -86,12 +86,15 @@ export default function AnnotatePdfPage() {
           const b = parseInt(colorString.substring(4, 6), 16) / 255;
           
           const annoTextWidth = (textAnno.width / 100) * pageWidth;
-          const annoTextHeight = (textAnno.height / 100) * pageHeight; // Used for Y positioning
-          const annoTextY = pageHeight - annoYBase - annoTextHeight; // Adjust Y for pdf-lib (bottom-left origin)
+          // For text, height is somewhat automatic based on content and width, but Y positioning needs care.
+          // We use a nominal height for Y positioning and let the text flow.
+          const nominalTextHeightForYCalc = textAnno.fontSize * 1.5; // Estimate, or could use textAnno.height if it had meaning.
+          const annoTextY = pageHeight - annoYBase - nominalTextHeightForYCalc; 
+
 
           page.drawText(textAnno.text, {
             x: annoX,
-            y: annoTextY + annoTextHeight - textAnno.fontSize, // Adjust y for text baseline within the box
+            y: annoTextY + nominalTextHeightForYCalc - textAnno.fontSize, // Adjust y for text baseline within the box
             size: textAnno.fontSize,
             font: helveticaFont,
             color: rgb(r, g, b),
@@ -247,7 +250,7 @@ export default function AnnotatePdfPage() {
       </header>
 
       <div className="flex-grow flex overflow-hidden">
-        <main className="flex-grow flex flex-col p-0 m-0 h-full">
+        <main className="flex-grow flex flex-col p-0 m-0 h-full min-w-0">
           {pdfFile && (
             <div className="bg-muted/30 p-2 border-b flex items-center justify-center gap-4 print:hidden">
               <Button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage <= 1} variant="ghost" size="icon"><ArrowLeft /></Button>

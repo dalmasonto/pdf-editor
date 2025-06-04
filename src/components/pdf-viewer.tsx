@@ -105,22 +105,21 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           setPdfLoadingError("The PDF document has no pages.");
           setPdfDoc(null);
           setNumPages(0);
-          onPageChange(0); // Or 1 if you prefer, but 0 indicates no valid page
+          onPageChange(0); 
           return;
         }
 
         setPdfDoc(pdf);
         setNumPages(pdf.numPages);
-        if (currentPage === 0 && pdf.numPages > 0) { // If coming from a no-page state
+        if (currentPage === 0 && pdf.numPages > 0) { 
              onPageChange(1);
-        } else if (currentPage > pdf.numPages) { // If current page is out of bounds from previous PDF
+        } else if (currentPage > pdf.numPages) { 
             onPageChange(pdf.numPages);
         } else if (currentPage === 0 && pdf.numPages === 0) {
-             onPageChange(0); // Stay at 0
-        } else if (currentPage < 1 && pdf.numPages > 0) { // Ensure current page is at least 1
+             onPageChange(0); 
+        } else if (currentPage < 1 && pdf.numPages > 0) { 
             onPageChange(1);
         }
-        // otherwise, keep current page if valid
       } catch (error) {
         console.error("Error loading PDF document:", error);
         setPdfLoadingError(`Error loading PDF: ${error instanceof Error ? error.message : String(error)}`);
@@ -142,8 +141,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       if (pdfDoc && (currentPage <= 0 || currentPage > numPages) && numPages > 0) {
           setPdfLoadingError(`Cannot render page ${currentPage}: page number is out of range (1-${numPages}).`);
       }
-      // Don't clear pageDimensions here if canvas is visible but page num is invalid
-      // Keep the last rendered page dimensions or clear if pdfDoc is null
       if(!pdfDoc) setPageDimensions({ width: 0, height: 0 });
       return;
     }
@@ -174,7 +171,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     } catch (error) {
       console.error(`Error rendering PDF page ${currentPage}:`, error);
       setPdfLoadingError(`Error rendering page ${currentPage}: ${error instanceof Error ? error.message : String(error)}`);
-      // setPageDimensions({ width: 0, height: 0 }); // Optionally clear dimensions on error
     }
   }, [pdfDoc, currentPage, scale, numPages]);
 
@@ -183,18 +179,15 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       renderPage();
     } else {
         if (!pdfDoc && file && isPdfjsLibLoaded) {
-           // Waiting for pdfDoc to load
         } else if (pdfDoc && (currentPage <= 0 || currentPage > numPages) && numPages > 0) {
-            // Invalid page number, error already set by renderPage
         } else if (!pdfDoc && !file) {
-            setPageDimensions({width: 0, height: 0}); // No file loaded
+            setPageDimensions({width: 0, height: 0}); 
         }
     }
   }, [pdfDoc, currentPage, numPages, scale, isPdfjsLibLoaded, renderPage, file]);
 
 
   const handleAnnotationMouseDown = useCallback((event: React.MouseEvent, annotation: Annotation) => {
-    // Prevent drag if resizing is initiated from a handle
     if ((event.target as HTMLElement).dataset.resizeHandle) {
       return;
     }
@@ -282,7 +275,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     const {
       annotationId,
       handle,
-      initialAnnotation,
+      // initialAnnotation, // not directly used for updates, currentAnnotation is fetched
       initialPageDimensions,
       startX,
       startY,
@@ -311,27 +304,31 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
       const dxPercentChange = (deltaX / initialPageDimensions.width) * 100;
       newAnnotationXPercent = initialAnnotationXPercent + dxPercentChange;
     }
-    if (handle.includes('bottom')) { // "bottom" in "bottomLeft", "bottomRight"
+    if (handle.includes('bottom')) { 
       newPixelHeight = initialPixelHeight + deltaY;
     }
-    if (handle.includes('top')) { // "top" in "topLeft", "topRight"
+    if (handle.includes('top')) { 
       newPixelHeight = initialPixelHeight - deltaY;
       const dyPercentChange = (deltaY / initialPageDimensions.height) * 100;
       newAnnotationYPercent = initialAnnotationYPercent + dyPercentChange;
     }
     
-    // Ensure minimum dimensions (e.g., 20px)
     const minPixelSize = 20;
     newPixelWidth = Math.max(newPixelWidth, minPixelSize);
     newPixelHeight = Math.max(newPixelHeight, minPixelSize);
 
     // Clamp positions to prevent going off-page with top/left handles
-    newAnnotationXPercent = Math.max(0, Math.min(newAnnotationXPercent, 99.9 - (newPixelWidth / initialPageDimensions.width * 100)));
-    newAnnotationYPercent = Math.max(0, Math.min(newAnnotationYPercent, 99.9 - (newPixelHeight / initialPageDimensions.height * 100)));
+    // Also ensure that width/height don't make it go off the right/bottom edge.
+    const currentWidthPercent = (newPixelWidth / initialPageDimensions.width) * 100;
+    const currentHeightPercent = (newPixelHeight / initialPageDimensions.height) * 100;
+    
+    newAnnotationXPercent = Math.max(0, Math.min(newAnnotationXPercent, 100 - currentWidthPercent));
+    newAnnotationYPercent = Math.max(0, Math.min(newAnnotationYPercent, 100 - currentHeightPercent));
 
 
     const finalWidthPercent = (newPixelWidth / initialPageDimensions.width) * 100;
     const finalHeightPercent = (newPixelHeight / initialPageDimensions.height) * 100;
+    
 
     onAnnotationUpdate({
       ...currentAnnotation,
@@ -374,13 +371,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     if (draggingAnnotationId || resizeState) return;
 
     const target = event.target as HTMLElement;
-    // Deselect if clicking on viewer bg and not starting a new annotation
     if ((target === viewerRef.current || target === canvasRef.current) && !selectedTool && !target.dataset.resizeHandle) {
         onAnnotationSelect(null);
     }
     
     if (!selectedTool || !viewerRef.current || !pageDimensions.width || !pageDimensions.height || !pdfDoc) return;
-    if (target.dataset.resizeHandle) return; // Don't add new annotation if clicking a handle
+    if (target.dataset.resizeHandle) return; 
 
 
     const canvasRect = canvasRef.current?.getBoundingClientRect();
@@ -475,7 +471,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
 
 
   return (
-    <div className="relative w-full h-full overflow-auto bg-muted/50 flex justify-center items-center p-4" ref={viewerRef} onClick={handleViewerClick}>
+    <div className="relative w-full h-full overflow-auto bg-muted/50 flex justify-center items-start p-4" ref={viewerRef} onClick={handleViewerClick}>
       {!file && <p className="text-muted-foreground">Upload a PDF to start annotating.</p>}
       {file && !isPdfjsLibLoaded && !pdfLoadingError && <p className="text-muted-foreground">Initializing PDF viewer...</p>}
       {pdfLoadingError && <p className="text-destructive px-4 text-center">{pdfLoadingError}</p>}
@@ -486,9 +482,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             <p className="text-muted-foreground">Loading PDF document...</p>
           )}
           {pdfDoc && (
-            <div className="relative flex flex-col items-center justify-center">
+            <div 
+                className="relative flex flex-col items-center justify-start" 
+            >
               <div
-                className="relative shadow-lg bg-white" // Added bg-white for canvas parent
+                className="relative shadow-lg bg-white" 
                 style={
                   pageDimensions.width > 0 && pageDimensions.height > 0
                     ? { width: pageDimensions.width, height: pageDimensions.height }
